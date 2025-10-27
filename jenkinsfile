@@ -2,20 +2,24 @@ pipeline {
     agent any
 
     environment {
+        // 🌐 Docker & GitHub details
         DOCKER_HUB = "saixdocker"
         IMAGE_NAME = "spring-boot-app"
         VERSION = "1.0.${BUILD_NUMBER}"
         GIT_REPO_MANIFEST = "https://github.com/MojjadaCode-Git/spring-boot-manifests.git"
         GIT_BRANCH = "main"
+
+        // 🔎 SonarQube
         SONAR_URL = "http://18.207.152.200:9000"
     }
 
     tools {
         maven 'Maven3'
-        jdk 'jdk8'
+        jdk 'jdk17'   // 🔹 use system JDK if you have OpenJDK 17 installed on Jenkins
     }
 
     stages {
+
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/MojjadaCode-Git/spring-boot-app.git'
@@ -28,7 +32,7 @@ pipeline {
                     sh '''
                     mvn clean verify sonar:sonar \
                       -Dsonar.projectKey=spring-boot-app \
-                      -Dsonar.host.url=http://18.207.152.200:9000 \
+                      -Dsonar.host.url=${SONAR_URL} \
                       -Dsonar.login=admin \
                       -Dsonar.password=Virat@2025!
                     '''
@@ -44,6 +48,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                // ✅ Uses your fixed Dockerfile (with correct JAR name)
                 sh "docker build -t ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION} ."
             }
         }
@@ -51,8 +56,10 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    sh "echo $PASS | docker login -u $USER --password-stdin"
-                    sh "docker push ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
+                    sh '''
+                    echo "$PASS" | docker login -u "$USER" --password-stdin
+                    docker push ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}
+                    '''
                 }
             }
         }
@@ -61,14 +68,15 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                     sh '''
+                    rm -rf manifests
                     git clone ${GIT_REPO_MANIFEST} manifests
                     cd manifests
                     sed -i "s#saixdocker/spring-boot-app:.*#saixdocker/spring-boot-app:${VERSION}#g" deployment.yaml
                     git config user.email "jenkins@example.com"
                     git config user.name "Jenkins"
                     git add deployment.yaml
-                    git commit -m "Updated image tag to ${VERSION}"
-                    git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/MojjadaCode-Git/spring-boot-manifests.git main
+                    git commit -m "Updated image tag to ${VERSION}" || echo "No changes to commit"
+                    git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/MojjadaCode-Git/spring-boot-manifests.git ${GIT_BRANCH}
                     '''
                 }
             }
@@ -77,8 +85,17 @@ pipeline {
         stage('Post Build') {
             steps {
                 echo "✅ Build completed successfully!"
-                echo "Docker Image: ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
+                echo "🐳 Docker Image: ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
+                echo "🔗 Check SonarQube at ${SONAR_URL}/projects"
+                echo "🚀 ArgoCD will auto-sync and deploy the new version"
             }
         }
     }
+
+    post {
+        failure {
+            echo "❌ Build failed — please check logs in Jenkins!"
+        }
+    }
 }
+
