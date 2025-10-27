@@ -2,7 +2,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
          http://maven.apache.org/xsd/maven-4.0.0.xsd">
-         
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
@@ -17,8 +16,10 @@
         <relativePath/>
     </parent>
 
-    <!-- 🔹 SonarQube Configuration -->
     <properties>
+        <java.version>11</java.version>
+
+        <!-- 🔹 SonarQube Configuration -->
         <sonar.projectKey>spring-boot-app</sonar.projectKey>
         <sonar.host.url>http://18.207.152.200:9000</sonar.host.url>
         <sonar.login>admin</sonar.login>
@@ -26,7 +27,6 @@
     </properties>
 
     <dependencies>
-        <!-- 🔹 Spring Boot Web Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -35,13 +35,13 @@
 
     <build>
         <plugins>
-            <!-- 🔹 Spring Boot Maven Plugin -->
+            <!-- Spring Boot plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- 🔹 SonarQube Maven Plugin -->
+            <!-- SonarQube plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
