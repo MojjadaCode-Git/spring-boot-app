@@ -18,37 +18,38 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                echo "🔹 Checking out application source code..."
                 git branch: 'main', url: 'https://github.com/MojjadaCode-Git/spring-boot-app.git'
             }
         }
 
         stage('SonarQube Analysis') {
             steps {
-                echo "🔹 Running SonarQube Analysis..."
                 withSonarQubeEnv('SonarQube') {
-                    sh 'mvn clean verify sonar:sonar'
+                    sh '''
+                    mvn clean verify sonar:sonar \
+                      -Dsonar.projectKey=spring-boot-app \
+                      -Dsonar.host.url=http://18.207.152.200:9000 \
+                      -Dsonar.login=admin \
+                      -Dsonar.password=Virat@2025!
+                    '''
                 }
             }
         }
 
         stage('Build JAR') {
             steps {
-                echo "🔹 Building Maven JAR..."
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "🔹 Building Docker Image..."
                 sh "docker build -t ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION} ."
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                echo "🔹 Pushing image to Docker Hub..."
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                     sh "echo $PASS | docker login -u $USER --password-stdin"
                     sh "docker push ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
@@ -58,7 +59,6 @@ pipeline {
 
         stage('Update Manifest Repo') {
             steps {
-                echo "🔹 Updating Kubernetes manifest with new image tag..."
                 withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                     sh '''
                     git clone ${GIT_REPO_MANIFEST} manifests
@@ -68,7 +68,7 @@ pipeline {
                     git config user.name "Jenkins"
                     git add deployment.yaml
                     git commit -m "Updated image tag to ${VERSION}"
-                    git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/MojjadaCode-Git/spring-boot-manifests.git ${GIT_BRANCH}
+                    git push https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/MojjadaCode-Git/spring-boot-manifests.git main
                     '''
                 }
             }
@@ -77,9 +77,7 @@ pipeline {
         stage('Post Build') {
             steps {
                 echo "✅ Build completed successfully!"
-                echo "🐳 Docker Image: ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
-                echo "🚀 Manifest Repo Updated: ${GIT_REPO_MANIFEST}"
-                echo "🔁 ArgoCD will auto-sync and deploy the new version."
+                echo "Docker Image: ${DOCKER_HUB}/${IMAGE_NAME}:${VERSION}"
             }
         }
     }
