@@ -17,9 +17,8 @@
     </parent>
 
     <properties>
+        <!-- ✅ Java & Sonar Configuration -->
         <java.version>11</java.version>
-
-        <!-- 🔹 SonarQube Configuration -->
         <sonar.projectKey>spring-boot-app</sonar.projectKey>
         <sonar.host.url>http://18.207.152.200:9000</sonar.host.url>
         <sonar.login>admin</sonar.login>
@@ -27,6 +26,7 @@
     </properties>
 
     <dependencies>
+        <!-- ✅ Spring Boot Web Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -35,13 +35,17 @@
 
     <build>
         <plugins>
-            <!-- Spring Boot plugin -->
+            <!-- ✅ Spring Boot Plugin with main class defined -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <!-- ⚠️ Ensure this matches your package structure -->
+                    <mainClass>com.example.demo.SpringBootAppApplication</mainClass>
+                </configuration>
             </plugin>
 
-            <!-- SonarQube plugin -->
+            <!-- ✅ SonarQube Plugin -->
             <plugin>
                 <groupId>org.sonarsource.scanner.maven</groupId>
                 <artifactId>sonar-maven-plugin</artifactId>
